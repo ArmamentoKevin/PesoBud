@@ -57,7 +57,7 @@ import ph.edu.comteq.pesobud.ui.theme.PesoBudTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditExpenseScreen(
-    expenseId: String? = null,
+    expenseId: Int? = null,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -372,6 +372,6 @@ fun AddExpenseScreenPreview() {
 @Composable
 fun EditExpenseScreenPreview() {
     PesoBudTheme {
-        AddEditExpenseScreen(expenseId = "1", onNavigateBack = {})
+        AddEditExpenseScreen(expenseId = 1, onNavigateBack = {})
     }
 }

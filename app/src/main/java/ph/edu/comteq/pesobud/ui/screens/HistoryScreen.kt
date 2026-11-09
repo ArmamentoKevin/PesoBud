@@ -60,15 +60,18 @@ fun HistoryScreen(
     modifier: Modifier = Modifier,
     initialOpenAddForm: Boolean = false
 ) {
+    // Search and filter state
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCategoryFilter by remember { mutableStateOf<Category?>(null) } // null means "All"
+    var selectedCategoryFilter by remember { mutableStateOf<Category?>(null) }
     var forceEmptyState by remember { mutableStateOf(false) }
 
+    // Dialog state for add and edit screen
     var showAddEditForm by remember { mutableStateOf(initialOpenAddForm) }
-    var editingExpenseId by remember { mutableStateOf<String?>(null) }
+    var editingExpenseId by remember { mutableStateOf<Int?>(null) }
 
     val categories = listOf("All") + Category.entries.map { it.displayName }
 
+    // Filter list based on search and category
     val filteredExpenses = remember(searchQuery, selectedCategoryFilter, forceEmptyState) {
         if (forceEmptyState) {
             emptyList()
@@ -81,7 +84,7 @@ fun HistoryScreen(
         }
     }
 
-    // Modal Add / Edit Expense Overlay inside History Screen
+    // Modal popup for add or edit form
     if (showAddEditForm) {
         Dialog(
             onDismissRequest = { showAddEditForm = false },
@@ -101,7 +104,7 @@ fun HistoryScreen(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Title Row with Add Button and Empty State Demo Toggle
+        // Title and add button row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -115,7 +118,7 @@ fun HistoryScreen(
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Add Expense Button placed inside HistoryScreen
+                // Button to open add form
                 Button(
                     onClick = {
                         editingExpenseId = null
@@ -137,7 +140,7 @@ fun HistoryScreen(
 
                 Spacer(modifier = Modifier.width(4.dp))
 
-                // Toggle for demonstration of empty state
+                // Eye icon to test empty state
                 IconButton(
                     onClick = { forceEmptyState = !forceEmptyState }
                 ) {
@@ -152,7 +155,7 @@ fun HistoryScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Search Bar
+        // Search input box
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -174,7 +177,7 @@ fun HistoryScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Filter by Category Header
+        // Filter chips label
         Text(
             text = "Filter by Category",
             fontSize = 14.sp,
@@ -184,7 +187,7 @@ fun HistoryScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Category Filter Chips
+        // Category filter list
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -210,7 +213,7 @@ fun HistoryScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Expenses List or Empty State
+        // Show expenses list or empty view
         if (filteredExpenses.isEmpty()) {
             Box(
                 modifier = Modifier
