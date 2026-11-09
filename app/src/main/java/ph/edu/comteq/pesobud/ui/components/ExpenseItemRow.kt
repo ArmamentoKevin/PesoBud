@@ -23,7 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ph.edu.comteq.pesobud.data.Expense
-import ph.edu.comteq.pesobud.data.formatDate
 import java.util.Locale
 
 @Composable
@@ -90,7 +89,7 @@ fun ExpenseItemRow(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = formatDate(expense.date),
+                    text = expense.date,
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

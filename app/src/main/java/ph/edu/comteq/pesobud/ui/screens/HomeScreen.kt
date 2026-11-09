@@ -1,5 +1,7 @@
 package ph.edu.comteq.pesobud.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,15 +20,21 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
-import ph.edu.comteq.pesobud.data.SampleData
+import ph.edu.comteq.pesobud.PesoBudApplication
+import ph.edu.comteq.pesobud.data.BudgetStatus
+import ph.edu.comteq.pesobud.data.BudgetSummary
 import ph.edu.comteq.pesobud.navigation.BottomNavigationBar
 import ph.edu.comteq.pesobud.navigation.Screen
 import ph.edu.comteq.pesobud.ui.components.BudgetSummaryCard
@@ -37,6 +45,30 @@ import ph.edu.comteq.pesobud.ui.theme.PesoBudTheme
 @Composable
 fun HomeScreen(
     onNavigateToHistory: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: HomeViewModel = viewModel(
+        factory = HomeViewModelFactory(
+            (LocalContext.current.applicationContext as PesoBudApplication).expenseRepository,
+            (LocalContext.current.applicationContext as PesoBudApplication).budgetRepository
+        )
+    )
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    HomeScreenContent(
+        uiState = uiState,
+        onNavigateToHistory = onNavigateToHistory,
+        onDebugLongClick = { viewModel.insertDebugSampleData() },
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun HomeScreenContent(
+    uiState: HomeUiState,
+    onNavigateToHistory: () -> Unit,
+    onDebugLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -47,13 +79,19 @@ fun HomeScreen(
         item {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Greeting & Settings
+            // Greeting row with long-press debug trigger
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                // TEMPORARY TESTING AID: Long press greeting text to insert sample budget and expense
+                Column(
+                    modifier = Modifier.combinedClickable(
+                        onClick = {},
+                        onLongClick = onDebugLongClick
+                    )
+                ) {
                     Text(
                         text = "Hi, Jeriko!",
                         fontSize = 24.sp,
@@ -80,11 +118,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // Monthly Budget Card
-            BudgetSummaryCard(
-                budget = SampleData.monthlyBudget,
-                spent = SampleData.totalSpent,
-                remaining = SampleData.remainingBudget
-            )
+            BudgetSummaryCard(budgetSummary = uiState.budgetSummary)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -114,7 +148,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        if (SampleData.expenses.isEmpty()) {
+        if (uiState.recentExpenses.isEmpty()) {
             item {
                 Text(
                     text = "No recent expenses yet.",
@@ -124,7 +158,7 @@ fun HomeScreen(
                 )
             }
         } else {
-            items(SampleData.expenses, key = { it.id }) { expense ->
+            items(uiState.recentExpenses, key = { it.id }) { expense ->
                 ExpenseItemRow(
                     expense = expense,
                     onClick = onNavigateToHistory
@@ -151,8 +185,14 @@ fun HomeScreenPreview() {
                 )
             }
         ) { innerPadding ->
-            HomeScreen(
+            HomeScreenContent(
+                uiState = HomeUiState(
+                    totalSpentThisMonth = 0.0,
+                    budgetSummary = BudgetSummary(0.0, 0.0, 0.0, 0, BudgetStatus.NO_BUDGET),
+                    recentExpenses = emptyList()
+                ),
                 onNavigateToHistory = {},
+                onDebugLongClick = {},
                 modifier = Modifier.padding(innerPadding)
             )
         }

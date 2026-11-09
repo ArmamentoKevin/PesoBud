@@ -19,20 +19,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ph.edu.comteq.pesobud.data.BudgetStatus
+import ph.edu.comteq.pesobud.data.BudgetSummary
+import ph.edu.comteq.pesobud.data.formatMoney
 import ph.edu.comteq.pesobud.ui.theme.GreenLightBg
 import ph.edu.comteq.pesobud.ui.theme.GreenPrimary
 import ph.edu.comteq.pesobud.ui.theme.TextPrimary
 import ph.edu.comteq.pesobud.ui.theme.TextSecondary
-import java.util.Locale
 
 @Composable
 fun BudgetSummaryCard(
-    budget: Double,
-    spent: Double,
-    remaining: Double,
+    budgetSummary: BudgetSummary,
     modifier: Modifier = Modifier
 ) {
-    val progress = if (budget > 0) (spent / budget).toFloat().coerceIn(0f, 1f) else 0f
+    val isNoBudget = budgetSummary.status == BudgetStatus.NO_BUDGET
+    val progress = if (budgetSummary.budget > 0) (budgetSummary.spent / budgetSummary.budget).toFloat().coerceIn(0f, 1f) else 0f
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -54,8 +55,8 @@ fun BudgetSummaryCard(
                     color = GreenPrimary
                 )
                 Text(
-                    text = "₱ ${String.format(Locale.US, "%,.2f", budget)}",
-                    fontSize = 18.sp,
+                    text = if (isNoBudget) "No budget set" else formatMoney(budgetSummary.budget),
+                    fontSize = if (isNoBudget) 15.sp else 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
@@ -79,13 +80,13 @@ fun BudgetSummaryCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Spent: ₱ ${String.format(Locale.US, "%,.2f", spent)}",
+                    text = "Spent: ${formatMoney(budgetSummary.spent)}",
                     fontSize = 13.sp,
                     color = TextSecondary,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Remaining: ₱ ${String.format(Locale.US, "%,.2f", remaining)}",
+                    text = "Remaining: ${if (isNoBudget) formatMoney(0.0) else formatMoney(budgetSummary.remaining)}",
                     fontSize = 13.sp,
                     color = GreenPrimary,
                     fontWeight = FontWeight.Bold
