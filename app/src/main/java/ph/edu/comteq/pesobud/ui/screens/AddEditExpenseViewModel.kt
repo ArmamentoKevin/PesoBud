@@ -28,7 +28,7 @@ data class AddEditExpenseUiState(
     val isDatePickerOpen: Boolean = false
 )
 
-// ViewModel managing form input, validation, and saving
+// ViewModel managing form input, validation, saving, and deleting
 class AddEditExpenseViewModel(
     private val expenseRepository: ExpenseRepository,
     private val expenseId: Int? = null
@@ -37,15 +37,24 @@ class AddEditExpenseViewModel(
     private val _uiState = MutableStateFlow(AddEditExpenseUiState(isEditMode = expenseId != null))
     val uiState: StateFlow<AddEditExpenseUiState> = _uiState.asStateFlow()
 
-    // Shared flow to trigger snackbar message on save
+    // Shared flow to trigger snackbar message on save or update
     private val _saveEvent = MutableSharedFlow<Unit>()
     val saveEvent: SharedFlow<Unit> = _saveEvent.asSharedFlow()
+
+    // Shared flow to safely navigate back if expense ID is not found
+    private val _notFoundEvent = MutableSharedFlow<Unit>()
+    val notFoundEvent: SharedFlow<Unit> = _notFoundEvent.asSharedFlow()
+
+    // Hold the loaded expense object for delete and undo
+    var loadedExpense: Expense? = null
+        private set
 
     init {
         if (expenseId != null) {
             viewModelScope.launch {
                 val existing = expenseRepository.getById(expenseId)
                 if (existing != null) {
+                    loadedExpense = existing
                     _uiState.update {
                         it.copy(
                             amountText = existing.amount.toString(),
@@ -54,6 +63,8 @@ class AddEditExpenseViewModel(
                             date = existing.date
                         )
                     }
+                } else {
+                    _notFoundEvent.emit(Unit)
                 }
             }
         }
@@ -82,6 +93,17 @@ class AddEditExpenseViewModel(
     // Toggle date picker dialog visibility
     fun setDatePickerOpen(isOpen: Boolean) {
         _uiState.update { it.copy(isDatePickerOpen = isOpen) }
+    }
+
+    // Delete expense and pass deleted expense object to callback
+    fun deleteExpense(onDeleted: (Expense) -> Unit) {
+        val expenseToDelete = loadedExpense
+        if (expenseToDelete != null) {
+            viewModelScope.launch {
+                expenseRepository.delete(expenseToDelete)
+                onDeleted(expenseToDelete)
+            }
+        }
     }
 
     // Validate inputs and save expense

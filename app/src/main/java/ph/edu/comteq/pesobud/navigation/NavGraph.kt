@@ -2,13 +2,16 @@ package ph.edu.comteq.pesobud.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -18,6 +21,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
+import ph.edu.comteq.pesobud.PesoBudApplication
 import ph.edu.comteq.pesobud.ui.screens.AddEditExpenseScreen
 import ph.edu.comteq.pesobud.ui.screens.BudgetScreen
 import ph.edu.comteq.pesobud.ui.screens.HistoryScreen
@@ -29,6 +33,9 @@ import ph.edu.comteq.pesobud.ui.theme.PesoBudTheme
 fun NavGraph(
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val application = context.applicationContext as? PesoBudApplication
+
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -81,6 +88,9 @@ fun NavGraph(
                             launchSingleTop = true
                             restoreState = true
                         }
+                    },
+                    onNavigateToEditExpense = { expenseId ->
+                        navController.navigate(Screen.EditExpense.createRoute(expenseId))
                     }
                 )
             }
@@ -122,9 +132,21 @@ fun NavGraph(
                 AddEditExpenseScreen(
                     expenseId = expenseId,
                     onNavigateBack = { navController.popBackStack() },
-                    onExpenseSaved = {
+                    onExpenseUpdated = {
                         coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Expense saved")
+                            snackbarHostState.showSnackbar("Expense updated")
+                        }
+                    },
+                    onExpenseDeleted = { deletedExpense ->
+                        coroutineScope.launch {
+                            val result = snackbarHostState.showSnackbar(
+                                message = "Expense deleted",
+                                actionLabel = "Undo",
+                                duration = SnackbarDuration.Short
+                            )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                application?.expenseRepository?.insert(deletedExpense)
+                            }
                         }
                     }
                 )

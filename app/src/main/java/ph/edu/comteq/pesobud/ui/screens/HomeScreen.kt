@@ -43,6 +43,7 @@ import ph.edu.comteq.pesobud.ui.theme.PesoBudTheme
 @Composable
 fun HomeScreen(
     onNavigateToHistory: () -> Unit,
+    onNavigateToEditExpense: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(
@@ -56,6 +57,7 @@ fun HomeScreen(
     HomeScreenContent(
         uiState = uiState,
         onNavigateToHistory = onNavigateToHistory,
+        onNavigateToEditExpense = onNavigateToEditExpense,
         modifier = modifier
     )
 }
@@ -64,6 +66,7 @@ fun HomeScreen(
 fun HomeScreenContent(
     uiState: HomeUiState,
     onNavigateToHistory: () -> Unit,
+    onNavigateToEditExpense: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -150,7 +153,7 @@ fun HomeScreenContent(
             items(uiState.recentExpenses, key = { it.id }) { expense ->
                 ExpenseItemRow(
                     expense = expense,
-                    onClick = onNavigateToHistory
+                    onClick = { onNavigateToEditExpense(expense.id) }
                 )
             }
         }
@@ -181,6 +184,7 @@ fun HomeScreenPreview() {
                     recentExpenses = emptyList()
                 ),
                 onNavigateToHistory = {},
+                onNavigateToEditExpense = {},
                 modifier = Modifier.padding(innerPadding)
             )
         }

@@ -60,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ph.edu.comteq.pesobud.PesoBudApplication
 import ph.edu.comteq.pesobud.data.Category
+import ph.edu.comteq.pesobud.data.Expense
 import ph.edu.comteq.pesobud.data.formatDate
 import ph.edu.comteq.pesobud.ui.components.DeleteConfirmationDialog
 import ph.edu.comteq.pesobud.ui.theme.GreenPrimary
@@ -84,6 +85,8 @@ fun AddEditExpenseScreen(
     expenseId: Int? = null,
     onNavigateBack: () -> Unit,
     onExpenseSaved: () -> Unit = {},
+    onExpenseUpdated: () -> Unit = {},
+    onExpenseDeleted: (Expense) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: AddEditExpenseViewModel = viewModel(
         factory = AddEditExpenseViewModelFactory(
@@ -94,10 +97,10 @@ fun AddEditExpenseScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Trigger save callback when saveEvent is emitted
+    // Safely navigate back if expense ID does not exist
     LaunchedEffect(Unit) {
-        viewModel.saveEvent.collect {
-            onExpenseSaved()
+        viewModel.notFoundEvent.collect {
+            onNavigateBack()
         }
     }
 
@@ -108,7 +111,25 @@ fun AddEditExpenseScreen(
         onNoteChange = viewModel::onNoteChange,
         onDateChange = viewModel::onDateChange,
         setDatePickerOpen = viewModel::setDatePickerOpen,
-        onSaveClick = { viewModel.saveExpense(onNavigateBack) },
+        onSaveClick = {
+            if (uiState.isEditMode) {
+                viewModel.saveExpense {
+                    onExpenseUpdated()
+                    onNavigateBack()
+                }
+            } else {
+                viewModel.saveExpense {
+                    onExpenseSaved()
+                    onNavigateBack()
+                }
+            }
+        },
+        onConfirmDelete = {
+            viewModel.deleteExpense { deleted ->
+                onExpenseDeleted(deleted)
+                onNavigateBack()
+            }
+        },
         onNavigateBack = onNavigateBack,
         modifier = modifier
     )
@@ -124,6 +145,7 @@ fun AddEditExpenseContent(
     onDateChange: (LocalDate) -> Unit,
     setDatePickerOpen: (Boolean) -> Unit,
     onSaveClick: () -> Unit,
+    onConfirmDelete: () -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -141,13 +163,18 @@ fun AddEditExpenseContent(
         selectableDates = PastAndTodaySelectableDates
     )
 
+    // Synchronize datePickerState when uiState.date updates from async load
+    LaunchedEffect(uiState.date) {
+        datePickerState.selectedDateMillis = initialSelectedDateMillis
+    }
+
     // Show delete popup when delete button is pressed
     if (showDeleteDialog) {
         DeleteConfirmationDialog(
             onDismiss = { showDeleteDialog = false },
             onConfirmDelete = {
                 showDeleteDialog = false
-                onNavigateBack()
+                onConfirmDelete()
             }
         )
     }
@@ -502,6 +529,7 @@ fun AddExpenseScreenPreview() {
             onDateChange = {},
             setDatePickerOpen = {},
             onSaveClick = {},
+            onConfirmDelete = {},
             onNavigateBack = {}
         )
     }
@@ -519,6 +547,7 @@ fun EditExpenseScreenPreview() {
             onDateChange = {},
             setDatePickerOpen = {},
             onSaveClick = {},
+            onConfirmDelete = {},
             onNavigateBack = {}
         )
     }
