@@ -108,7 +108,12 @@ fun NavGraph(
 
             composable(Screen.Budget.route) {
                 BudgetScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onBudgetSaved = {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Budget saved")
+                        }
+                    }
                 )
             }
 

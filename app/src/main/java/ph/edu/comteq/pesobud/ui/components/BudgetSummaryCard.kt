@@ -35,62 +35,85 @@ fun BudgetSummaryCard(
     val isNoBudget = budgetSummary.status == BudgetStatus.NO_BUDGET
     val progress = if (budgetSummary.budget > 0) (budgetSummary.spent / budgetSummary.budget).toFloat().coerceIn(0f, 1f) else 0f
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = GreenLightBg),
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+    // Dynamic progress bar color based on budget status
+    val progressColor = when (budgetSummary.status) {
+        BudgetStatus.OVER_BUDGET -> Color(0xFFEF4444)
+        BudgetStatus.NEAR_LIMIT -> Color(0xFFF59E0B)
+        else -> GreenPrimary
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        BudgetWarningBanner(budgetSummary = budgetSummary)
+        if (budgetSummary.status == BudgetStatus.NEAR_LIMIT || budgetSummary.status == BudgetStatus.OVER_BUDGET) {
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = GreenLightBg),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                Text(
-                    text = "Monthly Budget",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = GreenPrimary
-                )
-                Text(
-                    text = if (isNoBudget) "No budget set" else formatMoney(budgetSummary.budget),
-                    fontSize = if (isNoBudget) 15.sp else 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-            }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Monthly Budget",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = GreenPrimary
+                    )
+                    Text(
+                        text = if (isNoBudget) "No budget set" else formatMoney(budgetSummary.budget),
+                        fontSize = if (isNoBudget) 15.sp else 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-            LinearProgressIndicator(
-                progress = { progress },
-                color = GreenPrimary,
-                trackColor = Color(0xFFC8E6C9),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Spent: ${formatMoney(budgetSummary.spent)}",
-                    fontSize = 13.sp,
-                    color = TextSecondary,
-                    fontWeight = FontWeight.Medium
+                LinearProgressIndicator(
+                    progress = { progress },
+                    color = progressColor,
+                    trackColor = Color(0xFFC8E6C9),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
                 )
-                Text(
-                    text = "Remaining: ${if (isNoBudget) formatMoney(0.0) else formatMoney(budgetSummary.remaining)}",
-                    fontSize = 13.sp,
-                    color = GreenPrimary,
-                    fontWeight = FontWeight.Bold
-                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Spent: ${formatMoney(budgetSummary.spent)}",
+                        fontSize = 13.sp,
+                        color = TextSecondary,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    val remainingText = if (isNoBudget) {
+                        formatMoney(0.0)
+                    } else if (budgetSummary.status == BudgetStatus.OVER_BUDGET) {
+                        "Over by ${formatMoney(-budgetSummary.remaining)}"
+                    } else {
+                        "Remaining: ${formatMoney(budgetSummary.remaining)}"
+                    }
+
+                    Text(
+                        text = remainingText,
+                        fontSize = 13.sp,
+                        color = if (budgetSummary.status == BudgetStatus.OVER_BUDGET) Color(0xFFEF4444) else GreenPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
