@@ -49,13 +49,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import ph.edu.comteq.pesobud.PesoBudApplication
 import ph.edu.comteq.pesobud.data.BudgetStatus
-import ph.edu.comteq.pesobud.data.BudgetSummary
 import ph.edu.comteq.pesobud.data.formatMoney
 import ph.edu.comteq.pesobud.navigation.BottomNavigationBar
 import ph.edu.comteq.pesobud.navigation.Screen
 import ph.edu.comteq.pesobud.ui.components.BudgetWarningBanner
 import ph.edu.comteq.pesobud.ui.theme.GreenPrimary
 import ph.edu.comteq.pesobud.ui.theme.PesoBudTheme
+import kotlin.math.abs
+import kotlin.math.max
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -337,20 +338,22 @@ fun BudgetScreenContent(
 
                             Column {
                                 Text(
-                                    text = if (summary.status == BudgetStatus.OVER_BUDGET) "Over Budget" else "Remaining",
+                                    text = if (summary.status == BudgetStatus.OVER_BUDGET && summary.spent > summary.budget) "Over Budget" else "Remaining",
                                     fontSize = 12.sp,
                                     color = Color(0xFF64748B)
                                 )
-                                val remainingText = if (summary.status == BudgetStatus.OVER_BUDGET) {
-                                    "Over by ${formatMoney(-summary.remaining)}"
+                                val remainingText = if (summary.status == BudgetStatus.OVER_BUDGET && summary.spent > summary.budget) {
+                                    val overAmount = abs(summary.spent - summary.budget)
+                                    "Over by ${formatMoney(overAmount)}"
                                 } else {
-                                    formatMoney(summary.remaining)
+                                    val remainingVal = max(0.0, summary.remaining)
+                                    formatMoney(remainingVal)
                                 }
                                 Text(
                                     text = remainingText,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (summary.status == BudgetStatus.OVER_BUDGET) Color(0xFFEF4444) else GreenPrimary
+                                    color = if (summary.status == BudgetStatus.OVER_BUDGET && summary.spent > summary.budget) Color(0xFFEF4444) else GreenPrimary
                                 )
                             }
 

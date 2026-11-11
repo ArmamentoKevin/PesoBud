@@ -33,9 +33,10 @@ fun calculateBudgetSummary(spent: Double, budgetAmount: Double?): BudgetSummary 
     val remaining = budget - spent
     val percentage = ((spent / budget) * 100).toInt()
 
+    // Over budget only when spent strictly exceeds budget
     val status = when {
-        percentage >= 100 -> BudgetStatus.OVER_BUDGET
-        percentage >= 80 -> BudgetStatus.NEAR_LIMIT
+        spent > budget -> BudgetStatus.OVER_BUDGET
+        spent >= budget * 0.8 -> BudgetStatus.NEAR_LIMIT
         else -> BudgetStatus.UNDER_BUDGET
     }
 

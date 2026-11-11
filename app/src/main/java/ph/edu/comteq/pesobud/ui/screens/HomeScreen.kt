@@ -85,7 +85,7 @@ fun HomeScreenContent(
             ) {
                 Column {
                     Text(
-                        text = "Hi, Jeriko!",
+                        text = "Hi, Kevin!",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1E293B)
@@ -95,14 +95,6 @@ fun HomeScreenContent(
                         text = "Here's your monthly overview.",
                         fontSize = 14.sp,
                         color = Color(0xFF64748B)
-                    )
-                }
-
-                IconButton(onClick = { /* Settings action */ }) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Settings",
-                        tint = Color(0xFF1E293B)
                     )
                 }
             }

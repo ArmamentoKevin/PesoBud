@@ -26,6 +26,8 @@ import ph.edu.comteq.pesobud.ui.theme.GreenLightBg
 import ph.edu.comteq.pesobud.ui.theme.GreenPrimary
 import ph.edu.comteq.pesobud.ui.theme.TextPrimary
 import ph.edu.comteq.pesobud.ui.theme.TextSecondary
+import kotlin.math.abs
+import kotlin.math.max
 
 @Composable
 fun BudgetSummaryCard(
@@ -101,10 +103,12 @@ fun BudgetSummaryCard(
 
                     val remainingText = if (isNoBudget) {
                         formatMoney(0.0)
-                    } else if (budgetSummary.status == BudgetStatus.OVER_BUDGET) {
-                        "Over by ${formatMoney(-budgetSummary.remaining)}"
+                    } else if (budgetSummary.status == BudgetStatus.OVER_BUDGET && budgetSummary.spent > budgetSummary.budget) {
+                        val overAmount = abs(budgetSummary.spent - budgetSummary.budget)
+                        "Over by ${formatMoney(overAmount)}"
                     } else {
-                        "Remaining: ${formatMoney(budgetSummary.remaining)}"
+                        val remainingVal = max(0.0, budgetSummary.remaining)
+                        "Remaining: ${formatMoney(remainingVal)}"
                     }
 
                     Text(
