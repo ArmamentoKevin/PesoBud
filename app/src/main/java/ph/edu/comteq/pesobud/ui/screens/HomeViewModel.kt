@@ -7,15 +7,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import ph.edu.comteq.pesobud.data.Budget
 import ph.edu.comteq.pesobud.data.BudgetRepository
 import ph.edu.comteq.pesobud.data.BudgetSummary
-import ph.edu.comteq.pesobud.data.Category
 import ph.edu.comteq.pesobud.data.Expense
 import ph.edu.comteq.pesobud.data.ExpenseRepository
 import ph.edu.comteq.pesobud.data.calculateBudgetSummary
-import java.time.LocalDate
 import java.time.YearMonth
 
 // UI state holder for Home screen
@@ -27,8 +23,8 @@ data class HomeUiState(
 
 // ViewModel for Home screen managing overview data
 class HomeViewModel(
-    private val expenseRepository: ExpenseRepository,
-    private val budgetRepository: BudgetRepository
+    expenseRepository: ExpenseRepository,
+    budgetRepository: BudgetRepository
 ) : ViewModel() {
 
     // Current month expenses flow
@@ -61,21 +57,6 @@ class HomeViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = HomeUiState()
     )
-
-    // TEMPORARY DEBUG ACTION: Insert sample expense and set sample budget 5000 for testing
-    fun insertDebugSampleData() {
-        viewModelScope.launch {
-            budgetRepository.upsertBudget(Budget(id = 1, amount = 5000.0))
-            expenseRepository.insert(
-                Expense(
-                    amount = 150.0,
-                    category = Category.FOOD,
-                    note = "Jollibee (Debug)",
-                    date = LocalDate.now()
-                )
-            )
-        }
-    }
 }
 
 // Factory for creating HomeViewModel with repository dependencies

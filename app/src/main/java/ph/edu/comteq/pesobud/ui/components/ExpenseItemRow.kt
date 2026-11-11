@@ -23,7 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ph.edu.comteq.pesobud.data.Expense
-import java.util.Locale
+import ph.edu.comteq.pesobud.data.formatDate
+import ph.edu.comteq.pesobud.data.formatMoney
 
 @Composable
 fun ExpenseItemRow(
@@ -83,13 +84,13 @@ fun ExpenseItemRow(
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
-                    text = "₱ ${String.format(Locale.US, "%.2f", expense.amount)}",
+                    text = formatMoney(expense.amount),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = expense.date,
+                    text = formatDate(expense.date),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

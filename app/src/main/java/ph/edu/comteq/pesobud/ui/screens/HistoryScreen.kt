@@ -43,8 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.compose.rememberNavController
 import ph.edu.comteq.pesobud.data.Category
 import ph.edu.comteq.pesobud.data.SampleData
@@ -57,17 +55,14 @@ import ph.edu.comteq.pesobud.ui.theme.PesoBudTheme
 
 @Composable
 fun HistoryScreen(
-    modifier: Modifier = Modifier,
-    initialOpenAddForm: Boolean = false
+    onNavigateToAddExpense: () -> Unit = {},
+    onNavigateToEditExpense: (Int) -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     // Search and filter state
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryFilter by remember { mutableStateOf<Category?>(null) }
     var forceEmptyState by remember { mutableStateOf(false) }
-
-    // Dialog state for add and edit screen
-    var showAddEditForm by remember { mutableStateOf(initialOpenAddForm) }
-    var editingExpenseId by remember { mutableStateOf<Int?>(null) }
 
     val categories = listOf("All") + Category.entries.map { it.displayName }
 
@@ -81,19 +76,6 @@ fun HistoryScreen(
                 val matchesSearch = searchQuery.isBlank() || expense.note.contains(searchQuery, ignoreCase = true) || expense.category.displayName.contains(searchQuery, ignoreCase = true)
                 matchesCategory && matchesSearch
             }
-        }
-    }
-
-    // Modal popup for add or edit form
-    if (showAddEditForm) {
-        Dialog(
-            onDismissRequest = { showAddEditForm = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            AddEditExpenseScreen(
-                expenseId = editingExpenseId,
-                onNavigateBack = { showAddEditForm = false }
-            )
         }
     }
 
@@ -118,12 +100,9 @@ fun HistoryScreen(
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Button to open add form
+                // Button to open add expense screen
                 Button(
-                    onClick = {
-                        editingExpenseId = null
-                        showAddEditForm = true
-                    },
+                    onClick = onNavigateToAddExpense,
                     colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
@@ -230,10 +209,7 @@ fun HistoryScreen(
                 items(filteredExpenses, key = { it.id }) { expense ->
                     ExpenseItemRow(
                         expense = expense,
-                        onClick = {
-                            editingExpenseId = expense.id
-                            showAddEditForm = true
-                        }
+                        onClick = { onNavigateToEditExpense(expense.id) }
                     )
                 }
             }
@@ -250,6 +226,7 @@ fun HistoryScreenPreview() {
             bottomBar = {
                 BottomNavigationBar(
                     navController = navController,
+                    onAddExpenseClick = {},
                     selectedRoute = Screen.History.route
                 )
             }

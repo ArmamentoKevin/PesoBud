@@ -2,6 +2,7 @@ package ph.edu.comteq.pesobud.navigation
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +11,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,6 +38,7 @@ import ph.edu.comteq.pesobud.ui.theme.PesoBudTheme
 @Composable
 fun BottomNavigationBar(
     navController: NavController,
+    onAddExpenseClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     selectedRoute: String? = null
 ) {
@@ -49,8 +55,8 @@ fun BottomNavigationBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                .padding(horizontal = 16.dp),
+                .height(68.dp)
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -83,6 +89,27 @@ fun BottomNavigationBar(
                     }
                 }
             )
+
+            // Center + Button
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            ) {
+                FloatingActionButton(
+                    onClick = onAddExpenseClick,
+                    containerColor = GreenPrimary,
+                    contentColor = Color.White,
+                    shape = CircleShape,
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Expense",
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
 
             // Budget tab
             BottomNavItem(
@@ -143,6 +170,7 @@ fun BottomNavigationBarPreview() {
     PesoBudTheme {
         BottomNavigationBar(
             navController = rememberNavController(),
+            onAddExpenseClick = {},
             selectedRoute = Screen.Home.route
         )
     }

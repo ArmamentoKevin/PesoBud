@@ -1,7 +1,5 @@
 package ph.edu.comteq.pesobud.ui.screens
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,17 +56,14 @@ fun HomeScreen(
     HomeScreenContent(
         uiState = uiState,
         onNavigateToHistory = onNavigateToHistory,
-        onDebugLongClick = { viewModel.insertDebugSampleData() },
         modifier = modifier
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreenContent(
     uiState: HomeUiState,
     onNavigateToHistory: () -> Unit,
-    onDebugLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -79,19 +74,13 @@ fun HomeScreenContent(
         item {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Greeting row with long-press debug trigger
+            // Greeting row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // TEMPORARY TESTING AID: Long press greeting text to insert sample budget and expense
-                Column(
-                    modifier = Modifier.combinedClickable(
-                        onClick = {},
-                        onLongClick = onDebugLongClick
-                    )
-                ) {
+                Column {
                     Text(
                         text = "Hi, Jeriko!",
                         fontSize = 24.sp,
@@ -192,7 +181,6 @@ fun HomeScreenPreview() {
                     recentExpenses = emptyList()
                 ),
                 onNavigateToHistory = {},
-                onDebugLongClick = {},
                 modifier = Modifier.padding(innerPadding)
             )
         }

@@ -11,6 +11,10 @@ sealed class Screen(val route: String, val title: String? = null, val icon: Imag
     data object Home : Screen("home", "Home", Icons.Default.Home)
     data object History : Screen("history", "History", Icons.Default.History)
     data object Budget : Screen("budget", "Budget", Icons.Default.AccountBalanceWallet)
+    data object AddExpense : Screen("add_expense", "Add Expense")
+    data object EditExpense : Screen("edit_expense/{expenseId}", "Edit Expense") {
+        fun createRoute(expenseId: Int) = "edit_expense/$expenseId"
+    }
 
     companion object {
         val bottomBarScreens = listOf(Home, History, Budget)

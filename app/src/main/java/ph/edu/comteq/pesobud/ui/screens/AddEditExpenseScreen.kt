@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,10 +35,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,32 +51,95 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import ph.edu.comteq.pesobud.PesoBudApplication
 import ph.edu.comteq.pesobud.data.Category
+import ph.edu.comteq.pesobud.data.formatDate
 import ph.edu.comteq.pesobud.ui.components.DeleteConfirmationDialog
 import ph.edu.comteq.pesobud.ui.theme.GreenPrimary
 import ph.edu.comteq.pesobud.ui.theme.PesoBudTheme
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
+// Restrict date picker selection to today or past dates
 @OptIn(ExperimentalMaterial3Api::class)
+object PastAndTodaySelectableDates : SelectableDates {
+    override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+        val selectedDate = Instant.ofEpochMilli(utcTimeMillis)
+            .atZone(ZoneId.of("UTC"))
+            .toLocalDate()
+        return !selectedDate.isAfter(LocalDate.now())
+    }
+}
+
 @Composable
 fun AddEditExpenseScreen(
     expenseId: Int? = null,
     onNavigateBack: () -> Unit,
+    onExpenseSaved: () -> Unit = {},
+    modifier: Modifier = Modifier,
+    viewModel: AddEditExpenseViewModel = viewModel(
+        factory = AddEditExpenseViewModelFactory(
+            (LocalContext.current.applicationContext as PesoBudApplication).expenseRepository,
+            expenseId
+        )
+    )
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Trigger save callback when saveEvent is emitted
+    LaunchedEffect(Unit) {
+        viewModel.saveEvent.collect {
+            onExpenseSaved()
+        }
+    }
+
+    AddEditExpenseContent(
+        uiState = uiState,
+        onAmountChange = viewModel::onAmountChange,
+        onCategoryChange = viewModel::onCategoryChange,
+        onNoteChange = viewModel::onNoteChange,
+        onDateChange = viewModel::onDateChange,
+        setDatePickerOpen = viewModel::setDatePickerOpen,
+        onSaveClick = { viewModel.saveExpense(onNavigateBack) },
+        onNavigateBack = onNavigateBack,
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddEditExpenseContent(
+    uiState: AddEditExpenseUiState,
+    onAmountChange: (String) -> Unit,
+    onCategoryChange: (Category) -> Unit,
+    onNoteChange: (String) -> Unit,
+    onDateChange: (LocalDate) -> Unit,
+    setDatePickerOpen: (Boolean) -> Unit,
+    onSaveClick: () -> Unit,
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isEditMode = expenseId != null
-
-    // Hold input values for form
-    var amount by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(Category.FOOD) }
-    var note by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("") }
-
     var isDropdownOpen by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // Start date picker at currently selected date
+    val initialSelectedDateMillis = remember(uiState.date) {
+        uiState.date.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
+    }
+
+    // DatePicker state restricting future dates and showing current date
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialSelectedDateMillis,
+        selectableDates = PastAndTodaySelectableDates
+    )
 
     // Show delete popup when delete button is pressed
     if (showDeleteDialog) {
@@ -83,11 +152,41 @@ fun AddEditExpenseScreen(
         )
     }
 
+    // Material 3 DatePicker Dialog
+    if (uiState.isDatePickerOpen) {
+        DatePickerDialog(
+            onDismissRequest = { setDatePickerOpen(false) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selectedMillis = datePickerState.selectedDateMillis
+                        if (selectedMillis != null) {
+                            val pickedDate = Instant.ofEpochMilli(selectedMillis)
+                                .atZone(ZoneId.of("UTC"))
+                                .toLocalDate()
+                            onDateChange(pickedDate)
+                        }
+                        setDatePickerOpen(false)
+                    }
+                ) {
+                    Text("OK", color = GreenPrimary, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { setDatePickerOpen(false) }) {
+                    Text("Cancel", color = Color(0xFF64748B))
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    val titleText = if (isEditMode) "Edit Expense" else "Add Expense"
+                    val titleText = if (uiState.isEditMode) "Edit Expense" else "Add Expense"
                     Text(
                         text = titleText,
                         fontSize = 20.sp,
@@ -127,8 +226,8 @@ fun AddEditExpenseScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
-                value = amount,
-                onValueChange = { newValue -> amount = newValue },
+                value = uiState.amountText,
+                onValueChange = onAmountChange,
                 placeholder = { Text("e.g. 150.00", color = Color(0xFF94A3B8)) },
                 leadingIcon = {
                     Text(
@@ -139,13 +238,24 @@ fun AddEditExpenseScreen(
                         modifier = Modifier.padding(start = 12.dp)
                     )
                 },
+                isError = uiState.amountError != null,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = GreenPrimary,
-                    unfocusedBorderColor = Color(0xFFE2E8F0)
+                    unfocusedBorderColor = Color(0xFFE2E8F0),
+                    errorBorderColor = Color(0xFFEF4444)
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
+            if (uiState.amountError != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = uiState.amountError,
+                    color = Color(0xFFEF4444),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -160,7 +270,7 @@ fun AddEditExpenseScreen(
 
             Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
-                    value = selectedCategory.displayName,
+                    value = uiState.selectedCategory.displayName,
                     onValueChange = { },
                     readOnly = true,
                     leadingIcon = {
@@ -169,12 +279,12 @@ fun AddEditExpenseScreen(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(selectedCategory.backgroundColor)
+                                .background(uiState.selectedCategory.backgroundColor)
                         ) {
                             Icon(
-                                imageVector = selectedCategory.icon,
+                                imageVector = uiState.selectedCategory.icon,
                                 contentDescription = null,
-                                tint = selectedCategory.color,
+                                tint = uiState.selectedCategory.color,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -229,7 +339,7 @@ fun AddEditExpenseScreen(
                                 }
                             },
                             onClick = {
-                                selectedCategory = category
+                                onCategoryChange(category)
                                 isDropdownOpen = false
                             }
                         )
@@ -248,8 +358,8 @@ fun AddEditExpenseScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
-                value = note,
-                onValueChange = { newValue -> note = newValue },
+                value = uiState.noteText,
+                onValueChange = onNoteChange,
                 placeholder = { Text("e.g. Lunch at school", color = Color(0xFF94A3B8)) },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -261,7 +371,7 @@ fun AddEditExpenseScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Date input field
+            // Date input field (read-only, opens DatePicker on click)
             Text(
                 text = "Date",
                 fontSize = 14.sp,
@@ -269,37 +379,57 @@ fun AddEditExpenseScreen(
                 color = Color(0xFF334155)
             )
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = date,
-                onValueChange = { newValue -> date = newValue },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.CalendarToday,
-                        contentDescription = "Date",
-                        tint = Color(0xFF64748B),
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Select Date"
-                    )
-                },
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = GreenPrimary,
-                    unfocusedBorderColor = Color(0xFFE2E8F0)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = formatDate(uiState.date),
+                    onValueChange = {},
+                    readOnly = true,
+                    isError = uiState.dateError != null,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.CalendarToday,
+                            contentDescription = "Date",
+                            tint = Color(0xFF64748B),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "Select Date"
+                        )
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = GreenPrimary,
+                        unfocusedBorderColor = Color(0xFFE2E8F0),
+                        errorBorderColor = Color(0xFFEF4444)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { setDatePickerOpen(true) }
+                )
+            }
+            if (uiState.dateError != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = uiState.dateError,
+                    color = Color(0xFFEF4444),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(36.dp))
 
             // Action buttons
-            if (isEditMode) {
+            if (uiState.isEditMode) {
                 Button(
-                    onClick = onNavigateBack,
+                    onClick = onSaveClick,
                     colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
@@ -340,7 +470,7 @@ fun AddEditExpenseScreen(
                 }
             } else {
                 Button(
-                    onClick = onNavigateBack,
+                    onClick = onSaveClick,
                     colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
@@ -364,7 +494,16 @@ fun AddEditExpenseScreen(
 @Composable
 fun AddExpenseScreenPreview() {
     PesoBudTheme {
-        AddEditExpenseScreen(expenseId = null, onNavigateBack = {})
+        AddEditExpenseContent(
+            uiState = AddEditExpenseUiState(),
+            onAmountChange = {},
+            onCategoryChange = {},
+            onNoteChange = {},
+            onDateChange = {},
+            setDatePickerOpen = {},
+            onSaveClick = {},
+            onNavigateBack = {}
+        )
     }
 }
 
@@ -372,6 +511,15 @@ fun AddExpenseScreenPreview() {
 @Composable
 fun EditExpenseScreenPreview() {
     PesoBudTheme {
-        AddEditExpenseScreen(expenseId = 1, onNavigateBack = {})
+        AddEditExpenseContent(
+            uiState = AddEditExpenseUiState(isEditMode = true),
+            onAmountChange = {},
+            onCategoryChange = {},
+            onNoteChange = {},
+            onDateChange = {},
+            setDatePickerOpen = {},
+            onSaveClick = {},
+            onNavigateBack = {}
+        )
     }
 }
