@@ -26,6 +26,8 @@ import ph.edu.comteq.pesobud.ui.theme.GreenPrimary
 
 @Composable
 fun EmptyStateView(
+    title: String = "No expenses found",
+    message: String = "Try adjusting your search or filter,\nor add a new expense.",
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -60,7 +62,7 @@ fun EmptyStateView(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "No expenses found",
+            text = title,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF1E293B)
@@ -69,7 +71,7 @@ fun EmptyStateView(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Try adjusting your search or filter,\nor add a new expense.",
+            text = message,
             fontSize = 14.sp,
             color = Color(0xFF64748B),
             textAlign = TextAlign.Center
